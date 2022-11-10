@@ -2,45 +2,56 @@
 //  WKWebView+Rx.swift
 //  RxCocoa
 //
-//  Created by Andrew Breckenridge on 8/30/16.
-//  Copyright © 2016 Krunoslav Zaher. All rights reserved.
+//  Created by Giuseppe Lanza on 14/02/2020.
+//  Copyright © 2020 Krunoslav Zaher. All rights reserved.
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
-    import UIKit
-    import RxSwift
+import RxSwift
+import WebKit
 
-    extension Reactive where Base: WKWebView {
-
-        /// Reactive wrapper for `delegate`.
-        /// For more information take a look at `DelegateProxyType` protocol documentation.
-        public var delegate: DelegateProxy<WKWebView, WKWebViewDelegate> {
-            return RxWebViewDelegateProxy.proxy(for: base)
-        }
-
-        /// Reactive wrapper for `delegate` message.
-        public var didStartLoad: Observable<Void> {
-            return delegate
-                .methodInvoked(#selector(WKWebViewDelegate.webViewDidStartLoad(_:)))
-                .map { _ in }
-        }
-
-        /// Reactive wrapper for `delegate` message.
-        public var didFinishLoad: Observable<Void> {
-            return delegate
-                .methodInvoked(#selector(WKWebViewDelegate.webViewDidFinishLoad(_:)))
-                .map { _ in }
-        }
-        
-        /// Reactive wrapper for `delegate` message.
-        public var didFailLoad: Observable<Error> {
-            return delegate
-                .methodInvoked(#selector(WKWebViewDelegate.webView(_:didFailLoadWithError:)))
-                .map { a in
-                    return try castOrThrow(Error.self, a[1])
-                }
-        }
+@available(iOS 8.0, OSX 10.10, OSXApplicationExtension 10.10, *)
+extension Reactive where Base: WKWebView {
+    
+    /// Reactive wrapper for `navigationDelegate`.
+    /// For more information take a look at `DelegateProxyType` protocol documentation.
+    public var navigationDelegate: DelegateProxy<WKWebView, WKNavigationDelegate> {
+        RxWKNavigationDelegateProxy.proxy(for: base)
     }
+    
+    /// Reactive wrapper for `navigationDelegate` message.
+    public var didCommit: Observable<WKNavigation> {
+        navigationDelegate
+            .methodInvoked(#selector(WKNavigationDelegate.webView(_:didCommit:)))
+            .map { a in try castOrThrow(WKNavigation.self, a[1]) }
+    }
+    
+    /// Reactive wrapper for `navigationDelegate` message.
+    public var didStartLoad: Observable<WKNavigation> {
+        navigationDelegate
+            .methodInvoked(#selector(WKNavigationDelegate.webView(_:didStartProvisionalNavigation:)))
+            .map { a in try castOrThrow(WKNavigation.self, a[1]) }
+    }
+
+    /// Reactive wrapper for `navigationDelegate` message.
+    public var didFinishLoad: Observable<WKNavigation> {
+        navigationDelegate
+            .methodInvoked(#selector(WKNavigationDelegate.webView(_:didFinish:)))
+            .map { a in try castOrThrow(WKNavigation.self, a[1]) }
+    }
+
+    /// Reactive wrapper for `navigationDelegate` message.
+    public var didFailLoad: Observable<(WKNavigation, Error)> {
+        navigationDelegate
+            .methodInvoked(#selector(WKNavigationDelegate.webView(_:didFail:withError:)))
+            .map { a in
+                (
+                    try castOrThrow(WKNavigation.self, a[1]),
+                    try castOrThrow(Error.self, a[2])
+                )
+            }
+    }
+}
 
 #endif
