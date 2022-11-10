@@ -219,7 +219,7 @@ extension ObservableType {
             fatalError()
         }
     }
-    extension UIWebView {
+    extension WKWebView {
         @available(*, unavailable, message: "createRxDelegateProxy is now unavailable, check DelegateProxyFactory")
         public func createRxDelegateProxy() -> RxWebViewDelegateProxy {
             fatalError()
